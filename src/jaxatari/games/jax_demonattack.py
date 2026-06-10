@@ -13,6 +13,7 @@ from jaxatari.environment import JaxEnvironment, JAXAtariAction as Action, Objec
 from jaxatari.renderers import JAXGameRenderer
 from jaxatari.rendering import jax_rendering_utils as render_utils
 
+
 def _create_demon_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
     mask = jnp.array([
         [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
@@ -35,6 +36,7 @@ def _create_demon_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
 
     return sprite
 
+
 def _create_player_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
     mask = jnp.array([
         [0, 0, 1, 0, 1, 0, 0],
@@ -51,6 +53,7 @@ def _create_player_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
     sprite = sprite.at[:].set(mask_rgba)
 
     return sprite
+
 
 def _create_explosion_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
     mask = jnp.array([
@@ -69,6 +72,7 @@ def _create_explosion_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
 
     return sprite
 
+
 def _create_small_player_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
     mask = jnp.array([
         [0, 1, 0],
@@ -82,10 +86,13 @@ def _create_small_player_sprite(consts: "DemonAttackConstants") -> jnp.ndarray:
 
     return sprite
 
+
 def _create_projectile_sprite(size: Tuple[int, int], color_rgb: Tuple[int, int, int]) -> jnp.ndarray:
     sprite = np.zeros((*size, 4), dtype=np.uint8)
     sprite[:, :] = (*color_rgb, 255)
     return jnp.array(sprite)
+    phot
+
 
 def _create_digit_sprites(consts: "DemonAttackConstants") -> jnp.ndarray:
     digits = np.zeros((10, 8, 8, 4), dtype=np.uint8)
@@ -112,6 +119,7 @@ def _create_digit_sprites(consts: "DemonAttackConstants") -> jnp.ndarray:
 
     return jnp.array(digits)
 
+
 def _get_default_asset_config() -> tuple:
     return (
         {'name': 'background', 'type': 'procedural'},
@@ -125,8 +133,8 @@ def _get_default_asset_config() -> tuple:
         {'name': 'small_player', 'type': 'procedural'},
     )
 
+
 class DemonAttackConstants(struct.PyTreeNode):
-    # Static Configuration - Reduced overall display canvas height from 210 to 160
     WIDTH: int = struct.field(pytree_node=False, default=160)
     HEIGHT: int = struct.field(pytree_node=False, default=160)
     PLAYER_SPEED: int = struct.field(pytree_node=False, default=2)
@@ -135,7 +143,6 @@ class DemonAttackConstants(struct.PyTreeNode):
     LASER_SPEED: int = struct.field(pytree_node=False, default=4)
     BOMB_SPEED: int = struct.field(pytree_node=False, default=2)
 
-    # Coordinates & Sizes scaled vertically to match the shorter canvas height
     PLAYER_Y: int = struct.field(pytree_node=False, default=132)
     PLAYER_SIZE: Tuple[int, int] = struct.field(pytree_node=False, default=(6, 7))
     DEMON_SIZE: Tuple[int, int] = struct.field(pytree_node=False, default=(8, 12))
@@ -146,7 +153,6 @@ class DemonAttackConstants(struct.PyTreeNode):
     LIVES_BG_HEIGHT: int = struct.field(pytree_node=False, default=16)
     LIVES_SPACING: int = struct.field(pytree_node=False, default=6)
 
-    # Boundaries
     PLAYER_MIN_X: int = struct.field(pytree_node=False, default=16)
     PLAYER_MAX_X: int = struct.field(pytree_node=False, default=136)
     DEMON_MIN_X: int = struct.field(pytree_node=False, default=16)
@@ -154,7 +160,10 @@ class DemonAttackConstants(struct.PyTreeNode):
     DEMON_MIN_Y: int = struct.field(pytree_node=False, default=20)
     DEMON_MAX_Y: int = struct.field(pytree_node=False, default=85)
 
-    # Colors
+    # Wave Config
+    WAVE_SCORE_THRESHOLD: int = struct.field(pytree_node=False, default=200)  # Points needed to drop into "later waves"
+    DEMON_SHIFT_DOWN_AMOUNT: int = struct.field(pytree_node=False, default=10)
+
     BACKGROUND_COLOR: Tuple[int, int, int] = struct.field(pytree_node=False, default=(0, 0, 0))
     PLAYER_COLOR: Tuple[int, int, int] = struct.field(pytree_node=False, default=(206, 49, 173))
     SMALL_PLAYER_COLOR: Tuple[int, int, int] = struct.field(pytree_node=False, default=(242, 128, 135))
@@ -165,6 +174,7 @@ class DemonAttackConstants(struct.PyTreeNode):
     LIVES_BG_COLOR: Tuple[int, int, int] = struct.field(pytree_node=False, default=(0, 0, 176))
 
     ASSET_CONFIG: tuple = struct.field(pytree_node=False, default_factory=_get_default_asset_config)
+
 
 class DemonAttackState(struct.PyTreeNode):
     player_x: chex.Array
@@ -189,6 +199,7 @@ class DemonAttackState(struct.PyTreeNode):
     step_counter: chex.Array
     key: chex.PRNGKey
 
+
 class DemonAttackObservation(struct.PyTreeNode):
     player: ObjectObservation
     demons: ObjectObservation
@@ -197,8 +208,10 @@ class DemonAttackObservation(struct.PyTreeNode):
     score: jnp.ndarray
     lives: jnp.ndarray
 
+
 class DemonAttackInfo(struct.PyTreeNode):
     time: jnp.ndarray
+
 
 class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, DemonAttackInfo, DemonAttackConstants]):
     ACTION_SET: jnp.ndarray = jnp.array(
@@ -226,6 +239,7 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
             demons_alive=jnp.ones((self.consts.MAX_DEMONS,), dtype=jnp.bool_),
             bomb_x=jnp.array(0, dtype=jnp.int32),
             bomb_y=jnp.array(0, dtype=jnp.int32),
+
             bomb_active=jnp.array(False, dtype=jnp.bool_),
             score=jnp.array(0, dtype=jnp.int32),
             lives=jnp.array(6, dtype=jnp.int32),
@@ -311,24 +325,11 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
         new_y_dir = jnp.where(at_bottom_edge, -1, jnp.where(at_top_edge, 1, state.demons_y_dir))
         new_y = jnp.clip(new_y, self.consts.DEMON_MIN_Y, self.consts.DEMON_MAX_Y)
 
-        key, spawn_key = jax.random.split(state.key)
-        spawn_x = jax.random.randint(spawn_key, (self.consts.MAX_DEMONS,),
-                                      self.consts.DEMON_MIN_X, self.consts.DEMON_MAX_X)
-
-        new_x = jnp.where(state.demons_alive, new_x, spawn_x)
-        new_y = jnp.where(state.demons_alive, new_y,
-                          jnp.full((self.consts.MAX_DEMONS,), self.consts.DEMON_MAX_Y, dtype=jnp.int32))
-        new_y_dir = jnp.where(state.demons_alive, new_y_dir,
-                               jnp.full((self.consts.MAX_DEMONS,), -1, dtype=jnp.int32))
-        demons_alive = jnp.ones((self.consts.MAX_DEMONS,), dtype=jnp.bool_)
-
         return state.replace(
             demons_x=new_x,
             demons_y=new_y,
             demons_dir=new_dir,
             demons_y_dir=new_y_dir,
-            demons_alive=demons_alive,
-            key=key
         )
 
     def _bomb_step(self, state: DemonAttackState) -> DemonAttackState:
@@ -347,31 +348,64 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
         return state.replace(bomb_x=bomb_x, bomb_y=bomb_y, bomb_active=bomb_active, key=key)
 
     def _handle_collisions(self, state: DemonAttackState) -> DemonAttackState:
+        key, spawn_key = jax.random.split(state.key)
+
+        # Decide if we are in late waves based on score threshold
+        is_later_wave = state.score >= self.consts.WAVE_SCORE_THRESHOLD
+
         def check_demon_collision(i, carry):
-            s_alive, s_score, l_active = carry
+            s_alive, s_score, l_active, d_x, d_y, d_ydir = carry
 
             demon_hit = jnp.logical_and(
                 s_alive[i],
                 jnp.logical_and(
                     l_active,
                     jnp.logical_and(
-                        jnp.abs(state.laser_x - state.demons_x[i]) < self.consts.DEMON_SIZE[0],
+                        jnp.abs(state.laser_x - d_x[i]) < self.consts.DEMON_SIZE[0],
                         jnp.logical_and(
-                            state.laser_y < state.demons_y[i] + self.consts.DEMON_SIZE[1],
-                            state.laser_y + self.consts.LASER_SIZE[1] > state.demons_y[i]
+                            state.laser_y < d_y[i] + self.consts.DEMON_SIZE[1],
+                            state.laser_y + self.consts.LASER_SIZE[1] > d_y[i]
                         )
                     )
                 )
             )
 
-            new_alive = s_alive.at[i].set(jnp.logical_and(s_alive[i], jnp.logical_not(demon_hit)))
+            # Generate random X spawn position if needed
+            rand_x = jax.random.randint(spawn_key, (), self.consts.DEMON_MIN_X, self.consts.DEMON_MAX_X)
+
+            # Determine behavior on collision based on Wave Type
+            def late_wave_respawn():
+                # Step 1: Push EVERY alive demon down one level
+                shifted_y = d_y + jnp.where(s_alive, self.consts.DEMON_SHIFT_DOWN_AMOUNT, 0)
+                # Step 2: The killed demon respawns at the very top configuration
+                final_y = shifted_y.at[i].set(self.consts.DEMON_MIN_Y)
+                final_x = d_x.at[i].set(rand_x)
+                final_ydir = d_ydir.at[i].set(1)  # Start moving down
+                return final_x, final_y, final_ydir
+
+            def early_wave_respawn():
+                # Normal behavior: Respawns at identical height (Y) where it was blown up
+                final_x = d_x.at[i].set(rand_x)
+                return final_x, d_y, d_ydir
+
+            # Only execute shifting behaviors if hit occurred
+            next_x, next_y, next_ydir = jax.lax.cond(
+                demon_hit,
+                lambda: jax.lax.cond(is_later_wave, late_wave_respawn, early_wave_respawn),
+                lambda: (d_x, d_y, d_ydir)
+            )
+
             new_score = jnp.where(demon_hit, s_score + 10, s_score)
             new_laser_active = jnp.logical_and(l_active, jnp.logical_not(demon_hit))
 
-            return (new_alive, new_score, new_laser_active)
+            # Keep demons alive forever (infinite respawns matching Atari behavior)
+            return (s_alive, new_score, new_laser_active, next_x, next_y, next_ydir)
 
-        init_carry = (state.demons_alive, state.score, state.laser_active)
-        demons_alive, score, laser_active = jax.lax.fori_loop(0, self.consts.MAX_DEMONS, check_demon_collision, init_carry)
+        init_carry = (state.demons_alive, state.score, state.laser_active, state.demons_x, state.demons_y,
+                      state.demons_y_dir)
+        demons_alive, score, laser_active, demons_x, demons_y, demons_y_dir = jax.lax.fori_loop(
+            0, self.consts.MAX_DEMONS, check_demon_collision, init_carry
+        )
 
         player_hit = jnp.logical_and(
             state.bomb_active,
@@ -389,9 +423,12 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
         player_exploding = jnp.logical_or(state.player_exploding, player_hit)
         explosion_timer = jnp.where(player_hit, 20, state.explosion_timer)
 
-        return state.replace(demons_alive=demons_alive, score=score, laser_active=laser_active,
-                             lives=lives, bomb_active=bomb_active,
-                             player_exploding=player_exploding, explosion_timer=explosion_timer)
+        return state.replace(
+            demons_alive=demons_alive, score=score, laser_active=laser_active,
+            demons_x=demons_x, demons_y=demons_y, demons_y_dir=demons_y_dir,
+            lives=lives, bomb_active=bomb_active,
+            player_exploding=player_exploding, explosion_timer=explosion_timer, key=key
+        )
 
     def render(self, state: DemonAttackState) -> jnp.ndarray:
         return self.renderer.render(state)
@@ -401,6 +438,7 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
             x=state.player_x,
             y=jnp.array(self.consts.PLAYER_Y),
             width=jnp.array(self.consts.PLAYER_SIZE[0]),
+
             height=jnp.array(self.consts.PLAYER_SIZE[1]),
         )
 
@@ -437,7 +475,8 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
 
     def observation_space(self) -> spaces.Dict:
         object_space = spaces.get_object_space(n=None, screen_size=(self.consts.HEIGHT, self.consts.WIDTH))
-        demons_space = spaces.get_object_space(n=self.consts.MAX_DEMONS, screen_size=(self.consts.HEIGHT, self.consts.WIDTH))
+        demons_space = spaces.get_object_space(n=self.consts.MAX_DEMONS,
+                                               screen_size=(self.consts.HEIGHT, self.consts.WIDTH))
 
         return spaces.Dict({
             "player": object_space,
@@ -462,6 +501,7 @@ class JaxDemonAttack(JaxEnvironment[DemonAttackState, DemonAttackObservation, De
     @partial(jax.jit, static_argnums=(0,))
     def _get_done(self, state: DemonAttackState) -> bool:
         return state.lives <= 0
+
 
 class DemonAttackRenderer(JAXGameRenderer):
     def __init__(self, consts: DemonAttackConstants = None, config: render_utils.RendererConfig = None):
@@ -526,18 +566,22 @@ class DemonAttackRenderer(JAXGameRenderer):
 
         # Render demons
         demon_mask = self.SHAPE_MASKS["demon"]
+
         def render_demon(i, r):
             return jax.lax.cond(
                 state.demons_alive[i],
                 lambda: self.jr.render_at(r, state.demons_x[i], state.demons_y[i], demon_mask),
                 lambda: r
             )
+
         raster = jax.lax.fori_loop(0, self.consts.MAX_DEMONS, render_demon, raster)
 
         # Render laser
         laser_mask = self.SHAPE_MASKS["projectile_player"]
-        laser_render_x = jax.lax.select(state.laser_active, state.laser_x, state.player_x + self.consts.PLAYER_SIZE[1] // 2)
-        laser_render_y = jax.lax.select(state.laser_active, state.laser_y, self.consts.PLAYER_Y - self.consts.LASER_SIZE[1] + 2)
+        laser_render_x = jax.lax.select(state.laser_active, state.laser_x,
+                                        state.player_x + self.consts.PLAYER_SIZE[1] // 2)
+        laser_render_y = jax.lax.select(state.laser_active, state.laser_y,
+                                        self.consts.PLAYER_Y - self.consts.LASER_SIZE[1] + 2)
         raster = self.jr.render_at(raster, laser_render_x, laser_render_y, laser_mask)
 
         # Render bomb
@@ -557,16 +601,17 @@ class DemonAttackRenderer(JAXGameRenderer):
         is_triple_digit = jnp.logical_and(state.score >= 100, state.score < 1000)
 
         start_index = jax.lax.select(is_single_digit, 3,
-                        jax.lax.select(is_double_digit, 2,
-                        jax.lax.select(is_triple_digit, 1, 0)))
+                                     jax.lax.select(is_double_digit, 2,
+                                                    jax.lax.select(is_triple_digit, 1, 0)))
 
         num_to_render = jax.lax.select(is_single_digit, 1,
-                        jax.lax.select(is_double_digit, 2,
-                        jax.lax.select(is_triple_digit, 3, 4)))
+                                       jax.lax.select(is_double_digit, 2,
+                                                      jax.lax.select(is_triple_digit, 3, 4)))
 
         score_render_x = jax.lax.select(is_single_digit, 70 + (3 * 8) // 2,
-                         jax.lax.select(is_double_digit, 70 + (2 * 8) // 2,
-                         jax.lax.select(is_triple_digit, 70 + 8 // 2, 70)))
+                                        jax.lax.select(is_double_digit, 70 + (2 * 8) // 2,
+
+                                                       jax.lax.select(is_triple_digit, 70 + 8 // 2, 70)))
 
         raster = self.jr.render_label_selective(raster, score_render_x, 10, score_digits, digit_masks,
                                                 start_index, num_to_render, spacing=8)
@@ -578,10 +623,13 @@ class DemonAttackRenderer(JAXGameRenderer):
 
         def render_life_icon(i, r):
             return jax.lax.cond(
+
                 i < state.lives,
-                lambda: self.jr.render_at(r, self.consts.LIVES_X + i * self.consts.LIVES_SPACING, self.consts.LIVES_Y, player_icon),
+                lambda: self.jr.render_at(r, self.consts.LIVES_X + i * self.consts.LIVES_SPACING, self.consts.LIVES_Y,
+                                          player_icon),
                 lambda: r
             )
+
         raster = jax.lax.fori_loop(0, 6, render_life_icon, raster)
 
         return self.jr.render_from_palette(raster, self.PALETTE)
